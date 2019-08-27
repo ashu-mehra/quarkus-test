@@ -4,6 +4,9 @@ shopt -s extglob
 
 logfile=out
 
+DEFAULT_QUARKUS_APP_JAR="target/getting-started-1.0-SNAPSHOT-runner.jar"
+DEFAULT_QUARKUS_APP_NATIVE="target/getting-started-1.0-SNAPSHOT-runner"
+
 datediff() {
 	local start=$1
 	local end=$2
@@ -36,12 +39,22 @@ check_env() {
 	if [ -z "${QUARKUS_APP_JAR}" ];
 	then
 		echo "QUARKUS_APP_JAR is not set"
-		exit 1
+		if [ -f ${DEFAULT_QUARKUS_APP_JAR} ]; then
+			echo "Setting QUARKUS_APP_JAR to ${DEFAULT_QUARKUS_APP_JAR}"
+			QUARKUS_APP_JAR=${DEFAULT_QUARKUS_APP_JAR}
+		else
+			exit 1
+		fi
 	fi
 	if [ -z "${QUARKUS_APP_NATIVE}" ];
 	then
 		echo "QUARKUS_APP_NATIVE is not set"
-		exit 1
+		if [ -f ${DEFAULT_QUARKUS_APP_NATIVE} ]; then
+			echo "Setting QUARKUS_APP_JAR to ${DEFAULT_QUARKUS_APP_NATIVE}"
+			QUARKUS_APP_JAR=${DEFAULT_QUARKUS_APP_NATIVE}
+		else
+			exit 1
+		fi
 	fi
 }
 
@@ -164,7 +177,7 @@ openj9_scc() {
 
 pre
 
-for itr in `seq 1 10`;
+for itr in `seq 1 1`;
 do
 	echo "###"
 	echo "Iteration ${itr} for native"
