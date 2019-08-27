@@ -31,6 +31,8 @@ datediff() {
 }
 
 check_env() {
+	local cdir=`pwd`
+
 	if [ -z "${JAVA_HOME}" ];
 	then
 		echo "JAVA_HOME is not set"
@@ -40,8 +42,8 @@ check_env() {
 	then
 		echo "QUARKUS_APP_JAR is not set"
 		if [ -f ${DEFAULT_QUARKUS_APP_JAR} ]; then
-			echo "Setting QUARKUS_APP_JAR to ${DEFAULT_QUARKUS_APP_JAR}"
-			QUARKUS_APP_JAR=${DEFAULT_QUARKUS_APP_JAR}
+			echo "Setting QUARKUS_APP_JAR to ${cdir}/${DEFAULT_QUARKUS_APP_JAR}"
+			QUARKUS_APP_JAR=${cdir}/${DEFAULT_QUARKUS_APP_JAR}
 		else
 			exit 1
 		fi
@@ -50,8 +52,8 @@ check_env() {
 	then
 		echo "QUARKUS_APP_NATIVE is not set"
 		if [ -f ${DEFAULT_QUARKUS_APP_NATIVE} ]; then
-			echo "Setting QUARKUS_APP_JAR to ${DEFAULT_QUARKUS_APP_NATIVE}"
-			QUARKUS_APP_JAR=${DEFAULT_QUARKUS_APP_NATIVE}
+			echo "Setting QUARKUS_APP_NATIVE to ${cdir}/${DEFAULT_QUARKUS_APP_NATIVE}"
+			QUARKUS_APP_NATIVE=${cdir}/${DEFAULT_QUARKUS_APP_NATIVE}
 		else
 			exit 1
 		fi
@@ -76,7 +78,7 @@ pre() {
 	kill -9 ${pid} &>/dev/null
 }
 
-native() {
+test_native() {
 	logdir="native"
 
 	./hit_url.sh &
@@ -97,18 +99,19 @@ native() {
 	printf "native: %s\n" $(datediff ${start} ${end})
 }
 
-criu() {
+test_criu() {
 	logdir="criu"
 	cdir=`pwd`
 
-	rm -fr /root/quarkus/checkpoint
-	mkdir -p /root/quarkus/checkpoint
-	pushd /root/quarkus/checkpoint &>/dev/null
+	rm -fr checkpoint
+	mkdir checkpoint
+	pushd checkpoint &>/dev/null
 
 	setsid ${JAVA_HOME}/bin/java -jar ${QUARKUS_APP_JAR} </dev/null &>${logfile}.${itr} &
 	sleep 5s
 	pid=`ps -ef | grep getting-started | grep -v grep | awk '{ print $2 }'`
-	/root/criu/scripts/criu-ns dump -t ${pid} --tcp-established -v3 -o dump.log
+	echo "java pid to dump: ${pid}"
+	criu dump -t ${pid} --tcp-established -v3 -o dump.log
 
 	sleep 1s
 
@@ -117,7 +120,7 @@ criu() {
 
 	start=`date +"%T.%3N"`
 	#echo "start: ${start}"
-	/root/criu/scripts/criu-ns restore -d --tcp-established -v3 -o restore.log
+	criu restore -d --tcp-established -v3 -o restore.log
 	sleep 5s
 
 	pid=`ps -ef | grep getting-started | grep -v grep | awk '{ print $2 }'`
@@ -133,7 +136,7 @@ criu() {
 	popd &>/dev/null
 }
 
-openj9() {
+test_openj9() {
 	logdir="openj9"
 
 	./hit_url.sh &
@@ -154,7 +157,7 @@ openj9() {
 	printf "openj9: %s\n" $(datediff ${start} ${end})
 }
 
-openj9_scc() {
+test_openj9_scc() {
 	logdir="openj9_scc"
 
 	./hit_url.sh &
@@ -177,25 +180,25 @@ openj9_scc() {
 
 pre
 
-for itr in `seq 1 1`;
+for itr in `seq 1 10`;
 do
 	echo "###"
 	echo "Iteration ${itr} for native"
 
-	native
+	test_native
 
 	echo "###"
 	echo "Iteration ${itr} for criu"
 
-	criu
+	test_criu
 
 	echo "###"
 	echo "Iteration ${itr} for openj9"
 
-	openj9
+	test_openj9
 
 	echo "###"
 	echo "Iteration ${itr} for openj9_scc"
 
-	openj9_scc
+	test_openj9_scc
 done
