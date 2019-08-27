@@ -38,6 +38,11 @@ check_env() {
 		echo "JAVA_HOME is not set"
 		exit 1
 	fi
+	if [ -z "${CRIU_HOME}" ];
+	then
+		echo "CRIU_HOME is not set"
+		exit 1
+	fi
 	if [ -z "${QUARKUS_APP_JAR}" ];
 	then
 		echo "QUARKUS_APP_JAR is not set"
@@ -111,7 +116,7 @@ test_criu() {
 	sleep 5s
 	pid=`ps -ef | grep getting-started | grep -v grep | awk '{ print $2 }'`
 	echo "java pid to dump: ${pid}"
-	criu dump -t ${pid} --tcp-established -v3 -o dump.log
+	${CRIU_HOME}/scripts/criu-ns dump -t ${pid} --tcp-established -v3 -o dump.log
 
 	sleep 1s
 
@@ -120,7 +125,7 @@ test_criu() {
 
 	start=`date +"%T.%3N"`
 	#echo "start: ${start}"
-	criu restore -d --tcp-established -v3 -o restore.log
+	${CRIU_HOME}/scripts/criu-ns restore -d --tcp-established -v3 -o restore.log
 	sleep 5s
 
 	pid=`ps -ef | grep getting-started | grep -v grep | awk '{ print $2 }'`
