@@ -1,0 +1,48 @@
+####
+# This Dockerfile is used in order to build a container that runs the Quarkus application in JVM mode
+#
+# Before building the docker image run:
+#
+# mvn package
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.jvm.openj9 -t quarkus/getting-started-jvm-openj9 .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 quarkus/getting-started-jvm-openj9
+#
+###
+FROM adoptopenjdk/openjdk8-openj9
+
+# fabric8 Dockerfile
+USER root
+
+RUN mkdir -p /deployments
+
+# JAVA_APP_DIR is used by run-java.sh for finding the binaries
+ENV JAVA_APP_DIR=/deployments \
+    JAVA_MAJOR_VERSION=8
+
+# Agent bond including Jolokia and jmx_exporter
+ADD fabric8/agent-bond-opts /opt/run-java-options
+RUN mkdir -p /opt/agent-bond \
+ && curl http://central.maven.org/maven2/io/fabric8/agent-bond-agent/1.2.0/agent-bond-agent-1.2.0.jar \
+          -o /opt/agent-bond/agent-bond.jar \
+ && chmod 444 /opt/agent-bond/agent-bond.jar \
+ && chmod 755 /opt/run-java-options
+ADD fabric8/jmx_exporter_config.yml /opt/agent-bond/
+EXPOSE 8778 9779
+
+# Add run script as /deployments/run-java.sh and make it executable
+COPY fabric8/run-java.sh /deployments/
+RUN chmod 755 /deployments/run-java.sh
+
+# End of fabric8 Dockerfile
+
+ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV AB_ENABLED=jmx_exporter
+COPY target/lib/* /deployments/lib/
+COPY target/*-runner.jar /deployments/app.jar
+ENTRYPOINT [ "/deployments/run-java.sh" ]

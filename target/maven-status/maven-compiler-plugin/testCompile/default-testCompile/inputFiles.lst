@@ -1,0 +1,2 @@
+/root/quarkus/src/test/java/org/acme/quickstart/NativeGreetingResourceIT.java
+/root/quarkus/src/test/java/org/acme/quickstart/GreetingResourceTest.java
