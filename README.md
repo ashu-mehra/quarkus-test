@@ -1,9 +1,9 @@
 # quarkus-test
 
 Environment variables to be set:
-JAVA_HOME
-GRAALVM_HOME
-CRIU_HOME
+* JAVA_HOME
+* GRAALVM_HOME
+* CRIU_HOME
 
 Get OpenJ9 from https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u222-b10_openj9-0.15.1/OpenJDK8U-jdk_x64_linux_openj9_8u222b10_openj9-0.15.1.tar.gz
 
